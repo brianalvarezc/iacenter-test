@@ -1,10 +1,10 @@
 {
-  "name": "AAA - AI Center Transcript Workflow - Option A",
+  "name": "AI Center Transcript Workflow - Option B",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "transcript-audio1",
+        "path": "8f3cb64d-81a2-4fab-a4f6-32a3f1b59bf4",
         "authentication": "basicAuth",
         "options": {}
       },
@@ -14,9 +14,9 @@
         -1020,
         180
       ],
-      "id": "3b38bb30-b55b-42e6-8f23-03aed583319a",
+      "id": "040ae39e-bb34-43fa-b949-0e15e0320033",
       "name": "Webhook",
-      "webhookId": "19fcac7c-3f58-4f99-8950-b2c9913a4a22",
+      "webhookId": "8f3cb64d-81a2-4fab-a4f6-32a3f1b59bf4",
       "credentials": {
         "httpBasicAuth": {
           "id": "IgIQsn4JX81Xw0jj",
@@ -55,7 +55,7 @@
         -800,
         180
       ],
-      "id": "716bc413-cfa5-43ef-a701-82ee44b078e5",
+      "id": "7d8197fc-1224-43b7-936e-c2cd2f42be53",
       "name": "File received?"
     },
     {
@@ -93,10 +93,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -340,
-        40
+        -360,
+        -100
       ],
-      "id": "cba2fe71-bea6-45fc-bfbb-7ec983c03a3c",
+      "id": "5e55af69-9f0a-4c93-8c95-435fe862b669",
       "name": "Prepare HTTPRequest variables"
     },
     {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -120,
-        40
+        -140,
+        -100
       ],
-      "id": "4a801817-d841-464a-aa93-6c568d751797",
+      "id": "80567494-93b0-45b6-a568-687f2b440caf",
       "name": "Ask Gemini for Transcript",
       "alwaysOutputData": true
     },
@@ -158,11 +158,46 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -540,
-        40
+        -560,
+        -100
       ],
-      "id": "9effc7c0-d987-4b8f-ba70-a81bd2183b27",
+      "id": "31ab40e2-2d1b-421c-9408-7cc92aa411c9",
       "name": "Gemini Chat Variables"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fcf77c9c-9628-44f1-b87c-d902e21004a9",
+              "name": "message",
+              "value": "Trascript successful",
+              "type": "string"
+            },
+            {
+              "id": "0b375c21-6df7-4065-b62f-3ecdd8bce998",
+              "name": "workflow",
+              "value": "=AI Center Transcript Workflow",
+              "type": "string"
+            },
+            {
+              "id": "d931483d-6942-4a6f-8a7b-b8518efe0e70",
+              "name": "data",
+              "value": "={{ $json.data.textoLegible }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        220
+      ],
+      "id": "13727783-6047-4cd0-a5d3-a9475f94a1a7",
+      "name": "Success Response vars"
     },
     {
       "parameters": {
@@ -187,10 +222,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -540,
-        320
+        -320,
+        400
       ],
-      "id": "8bd1c5a7-d4ce-4823-b468-947edfad8a46",
+      "id": "3447bde8-c34e-4f65-9987-2e08bd68b57d",
       "name": "Not found file vars"
     },
     {
@@ -200,10 +235,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        100,
-        40
+        80,
+        -100
       ],
-      "id": "613e299e-2514-4952-982a-af79f5885cbd",
+      "id": "b1739ee5-57e1-4a29-b817-d16b1a55ad46",
       "name": "Raw transcript to JSON"
     },
     {
@@ -229,10 +264,10 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        380,
-        40
+        360,
+        -100
       ],
-      "id": "a7608109-91bc-42fd-8f4c-c9233a35f9c9",
+      "id": "7599edf2-fc9e-43b9-8e0b-366019ab3f81",
       "name": "JSON to VectodDB Workflow",
       "alwaysOutputData": true
     },
@@ -259,10 +294,10 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        -260,
-        320
+        360,
+        400
       ],
-      "id": "79a0e877-53dd-4c2f-805f-94d36c3ce31d",
+      "id": "e806241d-f5be-4951-ab87-a9324640b9ae",
       "name": "Notificate workflow"
     },
     {
@@ -277,7 +312,7 @@
         -240
       ],
       "typeVersion": 1,
-      "id": "c4712184-2de4-4cce-9424-3c557da044f9",
+      "id": "ec52163f-553d-436c-a7f5-900ab6c9ec8c",
       "name": "Sticky Note"
     }
   ],
@@ -345,6 +380,17 @@
         ]
       ]
     },
+    "Success Response vars": {
+      "main": [
+        [
+          {
+            "node": "Notificate workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Not found file vars": {
       "main": [
         [
@@ -359,6 +405,11 @@
     "Raw transcript to JSON": {
       "main": [
         [
+          {
+            "node": "Success Response vars",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "JSON to VectodDB Workflow",
             "type": "main",
@@ -378,11 +429,11 @@
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "6e30d988-6675-4663-bb21-ed67baf6ae61",
+  "versionId": "97e63a3d-7699-4693-b037-b22b1a03b983",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "be6c6d7ff7c15c8469c795932a0a6b3b9d114f5a447f9d3fb2f8180e44bcf430"
   },
-  "id": "yHFyjmsZ5j7xBnxz",
+  "id": "Or7Nz4Im8WABMJDa",
   "tags": []
 }

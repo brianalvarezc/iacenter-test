@@ -1,0 +1,339 @@
+{
+  "name": "JSON to VectorDB - Option B",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -620,
+        0
+      ],
+      "id": "87f0f630-9ccd-421e-bf85-49a6f8c37411",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9374c20f-6933-4cd3-ad28-f5df4a21d0dc",
+              "name": "vector_dadtabase_name",
+              "value": "transcription_embeddings_b",
+              "type": "string"
+            },
+            {
+              "id": "5cfab147-587a-4a02-902d-a96a040bbe81",
+              "name": "qdrant_url",
+              "value": "http://qdrant:6333",
+              "type": "string"
+            },
+            {
+              "id": "71d12946-4807-44e7-80c8-8fb378d3b213",
+              "name": "vector_size",
+              "value": "3072",
+              "type": "string"
+            },
+            {
+              "id": "6439c829-4dfe-40ac-a941-24a6318c7757",
+              "name": "qdrant_api_key",
+              "value": "test",
+              "type": "string"
+            },
+            {
+              "id": "9712ae26-7def-459a-a6b8-f95d7ea818aa",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "object"
+            },
+            {
+              "id": "a02f8517-8d0e-4835-8c66-326c78c3402c",
+              "name": "fileName",
+              "value": "={{ $json.data.binary.fileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -460,
+        0
+      ],
+      "id": "4e01ee7f-a106-4687-9157-7916a1337f2f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.qdrant_url }}/collections/{{ $json.vector_dadtabase_name }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "={{ $json.qdrant_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"vectors\": {\n    \"size\": {{ $json.vector_size }},\n    \"distance\": \"Cosine\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -280,
+        0
+      ],
+      "id": "1ca87bb6-d1bf-4981-b606-f42221c6e8eb",
+      "name": "Create Qdrant collection"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8149b4bb-328f-4c00-9342-7760b497e826",
+              "leftValue": "={{ $json.body.status.error }}",
+              "rightValue": "=Wrong input: Collection `{{ $('Edit Fields').item.json.vector_dadtabase_name }}` already exists!",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "c28ebdf8-5fc2-483d-817a-6712cd620cf0",
+              "leftValue": "={{ $json.body.status }}",
+              "rightValue": "={{ $json.body.status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -100,
+        0
+      ],
+      "id": "ec3e12d6-ea80-45fb-ae75-6cfb4ad9f987",
+      "name": "Created?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener la transcripción desde la entrada\nconst transcripcion = $('Edit Fields').item.json.data.transcripcion;\n\n// Generar un item por cada línea de transcripción\nreturn transcripcion.map(linea => {\n  return {\n    json: linea\n  };\n});\n\n// generar un solo item con todas las líneas\n// return [{\n//   json: {\n//     lines: transcripcion\n//   }\n// }]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        -20
+      ],
+      "id": "3f3bcdfb-a0c6-4e62-b6c3-494a77f6084e",
+      "name": "transcripcion.ForEach"
+    },
+    {
+      "parameters": {
+        "jsCode": "const dataItems = $('transcripcion.ForEach').all();\nconst embeddingsItems = $(\"EachLine Embedding API\").all();\n\nconst points = dataItems.map((dataItem, i) => {\n    return {\n      dataItem,\n      embedding: embeddingsItems[i]\n}});\n\nreturn [{\n  json: {\n    points\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        -20
+      ],
+      "id": "c74f258c-af4b-47c5-a6e3-e4561d9cfde9",
+      "name": "Merge items-embeddings"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputPoints = $('Merge items-embeddings').all()[0].json;\n\nconst formattedPoints = inputPoints.points.map(point => {\n  const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (c === 'x' ? (Math.random()*16|0) : ((Math.random()*16|0)&0x3|0x8)).toString(16));\n\n  return {\n    id: uuid,\n    linea: point.dataItem.json.linea,\n    vector: point.embedding.json.embedding.values, // solo los valores del embedding\n    payload: point.dataItem.json // mantener el payload intacto\n  };\n});\n\n// Retornar el objeto formateado para el siguiente nodo (como HTTP Request)\nreturn [{\n  json: {\n    points: formattedPoints\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        -20
+      ],
+      "id": "9ede6a10-9fbd-444c-8055-1f5b52389d1e",
+      "name": "Prepare QDrant points",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-exp-03-07:embedContent?key={{ $env.GOOGLE_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-exp-03-07\",\n  \"content\": {\n    \"parts\": [\n      {{ `{\"text\": \"` + $json.texto + `\"}` }}\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        -20
+      ],
+      "id": "79689530-c444-4fc4-8ec2-7a8f25d028d9",
+      "name": "EachLine Embedding API"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Edit Fields').first().json.qdrant_url}}/collections/{{ $('Edit Fields').first().json.vector_dadtabase_name }}/points?wait=true",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"Content-Type\": \"application/json\",\n  \"api-key\": \"{{ $('Edit Fields').first().json.qdrant_api_key }}\"\n} ",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{\n  \"points\": {{ JSON.stringify($json.points) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        -20
+      ],
+      "id": "269971df-a75c-4315-9f52-d7b5d059b67f",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create Qdrant collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Qdrant collection": {
+      "main": [
+        [
+          {
+            "node": "Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Created?": {
+      "main": [
+        [
+          {
+            "node": "transcripcion.ForEach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "transcripcion.ForEach": {
+      "main": [
+        [
+          {
+            "node": "EachLine Embedding API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge items-embeddings": {
+      "main": [
+        [
+          {
+            "node": "Prepare QDrant points",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EachLine Embedding API": {
+      "main": [
+        [
+          {
+            "node": "Merge items-embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QDrant points": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "24a0431f-b59e-40b8-9b12-6e6142696fe5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "be6c6d7ff7c15c8469c795932a0a6b3b9d114f5a447f9d3fb2f8180e44bcf430"
+  },
+  "id": "7HVdBWTrbx62sZJV",
+  "tags": []
+}
