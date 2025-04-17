@@ -1,0 +1,386 @@
+{
+  "name": "AAA - JSON to VectorDB - Option A",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -620,
+        0
+      ],
+      "id": "343f825b-cf8a-413d-aae3-85a263163047",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9374c20f-6933-4cd3-ad28-f5df4a21d0dc",
+              "name": "vector_dadtabase_name",
+              "value": "transcription_embeddings_a",
+              "type": "string"
+            },
+            {
+              "id": "5cfab147-587a-4a02-902d-a96a040bbe81",
+              "name": "qdrant_url",
+              "value": "http://qdrant:6333",
+              "type": "string"
+            },
+            {
+              "id": "71d12946-4807-44e7-80c8-8fb378d3b213",
+              "name": "vector_size",
+              "value": "3072",
+              "type": "string"
+            },
+            {
+              "id": "6439c829-4dfe-40ac-a941-24a6318c7757",
+              "name": "qdrant_api_key",
+              "value": "test",
+              "type": "string"
+            },
+            {
+              "id": "9712ae26-7def-459a-a6b8-f95d7ea818aa",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "object"
+            },
+            {
+              "id": "a02f8517-8d0e-4835-8c66-326c78c3402c",
+              "name": "fileName",
+              "value": "={{ $json.data.binary.fileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -440,
+        0
+      ],
+      "id": "a08f6cdb-514e-4595-86b0-e01da2c9948f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.vector_dadtabase_name }}",
+          "mode": "id"
+        },
+        "embeddingBatchSize": 10,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "412074f5-9f28-49f7-8032-0a28cf899181",
+      "name": "Qdrant Vector Store",
+      "alwaysOutputData": true,
+      "credentials": {
+        "qdrantApi": {
+          "id": "ZWm1zOTiZzpOmpdB",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.payload.texto }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "line",
+                "value": "={{ $json.payload.linea }}"
+              },
+              {
+                "name": "timestamp",
+                "value": "={{ $json.payload.timestamp }}"
+              },
+              {
+                "name": "talking",
+                "value": "={{ $json.payload.hablante }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json.payload.texto }}"
+              },
+              {
+                "name": "file",
+                "value": "={{ $json.payload.audio }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        340,
+        180
+      ],
+      "id": "61f600a1-2155-4adb-a927-7b7443822f6e",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "separator": "###"
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        360,
+        320
+      ],
+      "id": "bb947a81-0e63-421f-b70c-812874ce020e",
+      "name": "Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ee80c80e-ee96-4e15-b8ec-4855cfa2c042",
+              "name": "transcripcion",
+              "value": "={{ $json.data.transcripcion }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "4020cfbd-8130-485b-9a8a-2981f3bbd7c9",
+      "name": "Get Transcripton Lines",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "transcripcion",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        0
+      ],
+      "id": "408688e0-31b8-4a24-8377-fec3fc68aa53",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        140,
+        220
+      ],
+      "id": "2316144b-7f92-4f2e-84a9-a57725f85708",
+      "name": "Embeddings HuggingFace Inference",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "4JqrfLS96mF0rpms",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fcf77c9c-9628-44f1-b87c-d902e21004a9",
+              "name": "message",
+              "value": "Trascript successful",
+              "type": "string"
+            },
+            {
+              "id": "0b375c21-6df7-4065-b62f-3ecdd8bce998",
+              "name": "workflow",
+              "value": "=AI Center Transcript Workflow",
+              "type": "string"
+            },
+            {
+              "id": "d931483d-6942-4a6f-8a7b-b8518efe0e70",
+              "name": "data",
+              "value": "={{ $('Edit Fields').item.data.textoLegible }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        620,
+        0
+      ],
+      "id": "3489cecb-db12-4867-a7a2-d96aba4a97e2",
+      "name": "Success Response vars"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "CbMGjs8kAZ2g5saF",
+          "mode": "list",
+          "cachedResultName": "Global Notification workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        840,
+        0
+      ],
+      "id": "2002d289-a9e1-4b8f-b529-bd402c99cc8a",
+      "name": "Execute Workflow",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get Transcripton Lines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Success Response vars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Transcripton Lines": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response vars": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f3f37d86-8efa-4cbe-ad06-685fa425041a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "be6c6d7ff7c15c8469c795932a0a6b3b9d114f5a447f9d3fb2f8180e44bcf430"
+  },
+  "id": "L4f03Kb0qHH8PRgm",
+  "tags": []
+}

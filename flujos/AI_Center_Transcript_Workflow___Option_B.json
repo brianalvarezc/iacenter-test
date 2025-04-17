@@ -1,0 +1,439 @@
+{
+  "name": "AI Center Transcript Workflow - Option B",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "8f3cb64d-81a2-4fab-a4f6-32a3f1b59bf4",
+        "authentication": "basicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1020,
+        180
+      ],
+      "id": "040ae39e-bb34-43fa-b949-0e15e0320033",
+      "name": "Webhook",
+      "webhookId": "8f3cb64d-81a2-4fab-a4f6-32a3f1b59bf4",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "IgIQsn4JX81Xw0jj",
+          "name": "Basic auth for Webhook"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f6bcf8a0-610d-48fa-8898-cd07d4c3e167",
+              "leftValue": "={{ $('Webhook').item.binary }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -800,
+        180
+      ],
+      "id": "7d8197fc-1224-43b7-936e-c2cd2f42be53",
+      "name": "File received?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "852c073d-2f87-432c-8bf2-b1a9738d25d4",
+              "name": "mime_type",
+              "value": "={{ $('File received?').item.binary.audio_file.mimeType }}",
+              "type": "string"
+            },
+            {
+              "id": "63ee2ca7-68dc-4da1-ae5a-2167ecd76e88",
+              "name": "num_bytes",
+              "value": "={{ $('File received?').item.binary.audio_file.fileSize }}",
+              "type": "string"
+            },
+            {
+              "id": "fd4f1e64-462e-433a-a3d9-f212a447546e",
+              "name": "display_name",
+              "value": "={{ $('File received?').item.binary.audio_file.fileName }}",
+              "type": "string"
+            },
+            {
+              "id": "a0a4ebe7-f423-4799-b1fe-9b989dda10b3",
+              "name": "gemini_chat_url",
+              "value": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Gemini Chat Variables').item.json.gemini_model[0] }}:generateContent?key={{ $env.GOOGLE_API_KEY }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -360,
+        -100
+      ],
+      "id": "5e55af69-9f0a-4c93-8c95-435fe862b669",
+      "name": "Prepare HTTPRequest variables"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare HTTPRequest variables').item.json.gemini_chat_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        { \n          \"text\": \"{{ $('Gemini Chat Variables').item.json.transcript_promt.replace(/\\n/g, ' ').replace(/\"/g, '\\\\\"') }}\" \n        },\n        {\n          \"inline_data\": {\n            \"mime_type\": \"{{ $('Prepare HTTPRequest variables').item.json.mime_type }}\",\n            \"data\": \"{{ $('File received?').item.binary.audio_file.data }}\"\n          }\n        }\n      ]\n    }\n  ]\n}\n",
+        "options": {
+          "response": {}
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        -100
+      ],
+      "id": "80567494-93b0-45b6-a568-687f2b440caf",
+      "name": "Ask Gemini for Transcript",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10267215-3c4b-4768-b12d-0749bd58b093",
+              "name": "transcript_promt",
+              "value": "=Transcribe completamente el siguiente archivo de audio en español. \n\nIdentifica claramente a cada hablante con sus nombres si se identifican con nombre propio, si otro de los hablantes los identifica por sus nombres o por algún seudónimo, preferiblemente con apellido pero si no hay apellido, con algún nombre o sudónimo. En caso de no identificarse, se puede con nombres genéricos como \"Hablante 1\", \"Hablante 2\", etc.\n\nMuestra el diálogo en orden cronológico, e incluye marcas de tiempo aproximadas si es posible. Separa cada intervención de los hablantes en una línea usando el siguiente formato:\n\n###|# de linea|hh:mm:ss.mmm|Hablante X|Texto...\n\nEn el formato: \n- hh corresponden a horas\n- mm corresponden a minutos\n- ss corresponden a segundos\n- mmm corresponden a milisegundos en caso de que se puedan estimar, preferiblemente no\n\nEjemplo 1:\n###|47|00:00:58|Andrés Pérez|Hola Juan, ¿cómo estás?\n###|48|00:01:03|Juan|Todo bien, gracias.\n\n\nEjemplo 2:\n###|345|00:59:58|Hablante 1|Hola señor José, ¿Qué le ha parecido la función?\n###|346|01:00:03|José|Todo muy bonito y bien hecho, muchas gracias.\n\n\nUsa los nombres, sudónimos o nombres genéricos como \"Hablante 1\", \"Hablante 2\", etc., de forma coherente.  \n\nNo incluyas explicaciones, introducciones, ni notas adicionales. Solo texto transcrito, una línea por intervención, sin saltos innecesarios. Si hay silencios se genera otra línea aunque sea del mismo hablante.\n\nMantén para toda la transcripción el formato establecido de marcas de tiempo hh:mm:ss.mmm con horas, minutos, segundos y (opcional) milisegundos, éstas marcas de tiempo se usarán en búsquedas posteriores por lo que si son erradas o incoherentes no servirán.",
+              "type": "string"
+            },
+            {
+              "id": "9cf86abb-b402-4f15-9392-6679343afc94",
+              "name": "gemini_api_key",
+              "value": "={{ $env.GOOGLE_API_KEY }}",
+              "type": "string"
+            },
+            {
+              "id": "ea64914d-c146-4ea4-bab7-d3fa25d09409",
+              "name": "gemini_model",
+              "value": "={{ [\n  \"gemini-2.5-pro-exp-03-25\",\n  \"gemini-2.0-flash\"\n]}}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        -100
+      ],
+      "id": "31ab40e2-2d1b-421c-9408-7cc92aa411c9",
+      "name": "Gemini Chat Variables"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fcf77c9c-9628-44f1-b87c-d902e21004a9",
+              "name": "message",
+              "value": "Trascript successful",
+              "type": "string"
+            },
+            {
+              "id": "0b375c21-6df7-4065-b62f-3ecdd8bce998",
+              "name": "workflow",
+              "value": "=AI Center Transcript Workflow",
+              "type": "string"
+            },
+            {
+              "id": "d931483d-6942-4a6f-8a7b-b8518efe0e70",
+              "name": "data",
+              "value": "={{ $json.data.textoLegible }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        220
+      ],
+      "id": "13727783-6047-4cd0-a5d3-a9475f94a1a7",
+      "name": "Success Response vars"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fcf77c9c-9628-44f1-b87c-d902e21004a9",
+              "name": "message",
+              "value": "Webhook file not found",
+              "type": "string"
+            },
+            {
+              "id": "0b375c21-6df7-4065-b62f-3ecdd8bce998",
+              "name": "workflow",
+              "value": "=AI Center Transcript Workflow",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        400
+      ],
+      "id": "3447bde8-c34e-4f65-9987-2e08bd68b57d",
+      "name": "Not found file vars"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $input.first().json.candidates[0].content.parts[0].text;\nconst fileName = $(\"Webhook\").first().binary.audio_file.fileName;\nconst fecha = new Date().toISOString();\n\nconst lines = rawText\n  .split('\\n')\n  .map(line => line.trim())\n  .filter(line => line.startsWith('###|'));\n\nconst textoLegible = rawText.replace(/\\\\n/g, '\\n').trim();\n\nfunction normalizarTimestamp(raw) {\n  try {\n    const partes = raw.split(':');\n    let horas = '00', minutos = '00', segundos = '00', milis = '000';\n\n    if (partes.length === 1) {\n      segundos = partes[0].padStart(2, '0');\n    } else if (partes.length === 2) {\n      minutos = partes[0].padStart(2, '0');\n      const segundoPartes = partes[1].split('.');\n      segundos = segundoPartes[0].padStart(2, '0');\n      if (segundoPartes[1]) milis = segundoPartes[1].padEnd(3, '0');\n    } else if (partes.length === 3) {\n      horas = partes[0].padStart(2, '0');\n      minutos = partes[1].padStart(2, '0');\n      const segundoPartes = partes[2].split('.');\n      segundos = segundoPartes[0].padStart(2, '0');\n      if (segundoPartes[1]) milis = segundoPartes[1].padEnd(3, '0');\n    } else {\n      return raw;\n    }\n\n    return `${horas}:${minutos}:${segundos}.${milis}`;\n  } catch (error) {\n    return raw;\n  }\n}\n\nconst hablantesSet = new Set();\nconst puntos = [];\n\nconst transcripcion = lines.map((line, index) => {\n  const regex = /^###\\|(\\d+)\\|([\\d:.]+)\\|(.+?)\\|(.*)$/;\n  const match = line.match(regex);\n\n  if (match) {\n    const linea = parseInt(match[1], 10);\n    const timestamp = normalizarTimestamp(match[2]);\n    const hablante = match[3].trim();\n    const texto = match[4].trim();\n\n    hablantesSet.add(hablante);\n\n    puntos.push({\n      id: `${fileName}-linea-${String(linea).padStart(3, '0')}`,\n      vector: [], // se llenará después\n      payload: {\n        archivo: fileName,\n        fecha,\n        hablantes: [], // se llenará al final con los valores únicos\n        linea,\n        timestamp,\n        hablante,\n        texto,\n        audio: fileName\n      }\n    });\n\n    return {\n      linea,\n      timestamp,\n      hablante,\n      texto,\n      audio: fileName\n    };\n  } else {\n    return {\n      error: \"Formato no reconocido\",\n      contenido: line,\n      index\n    };\n  }\n});\n\n// Agregar lista de hablantes únicos a cada punto\nconst hablantesArray = Array.from(hablantesSet);\npuntos.forEach(p => {\n  p.payload.hablantes = hablantesArray;\n});\n\n// Resultado final\nreturn [{\n  json: {\n    data: {\n      transcripcion: puntos,\n      textoLegible,\n    }\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -100
+      ],
+      "id": "b1739ee5-57e1-4a29-b817-d16b1a55ad46",
+      "name": "Raw transcript to JSON"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "L4f03Kb0qHH8PRgm",
+          "mode": "list",
+          "cachedResultName": "JSON to VectorDB - Option A"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        360,
+        -100
+      ],
+      "id": "7599edf2-fc9e-43b9-8e0b-366019ab3f81",
+      "name": "JSON to VectodDB Workflow",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "CbMGjs8kAZ2g5saF",
+          "mode": "list",
+          "cachedResultName": "Global Notification workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        360,
+        400
+      ],
+      "id": "e806241d-f5be-4951-ab87-a9324640b9ae",
+      "name": "Notificate workflow"
+    },
+    {
+      "parameters": {
+        "content": "### 🧾 Entrada al siguiente workflow\n```json\n{\n  \"transcripcion\": [\n  {\n    \"linea\": 1,\n    \"timestamp\": \"00:00:05\",\n    \"hablante\": \"Hablante 1\",\n    \"texto\": \"Hola, ¿cómo estás?\",\n    \"audio\": \"audio1.ogg\"\n  },\n  {\n    \"linea\": 2,\n    \"timestamp\": \"00:00:10\",\n    \"hablante\": \"Hablante 2\",\n    \"texto\": \"Bien, gracias.\",\n    \"audio\": \"audio1.ogg\"\n  }\n],\n  \"textoLegible\": \"###[1][00:00:05]Hablante 1: Hola, ¿cómo estás?\\n\n###[2][00:00:10]Hablante 2: Bien, gracias.\"\n}\n```\n\n",
+        "height": 380,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        600,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "ec52163f-553d-436c-a7f5-900ab6c9ec8c",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "File received?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File received?": {
+      "main": [
+        [
+          {
+            "node": "Gemini Chat Variables",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not found file vars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare HTTPRequest variables": {
+      "main": [
+        [
+          {
+            "node": "Ask Gemini for Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Variables": {
+      "main": [
+        [
+          {
+            "node": "Prepare HTTPRequest variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Gemini for Transcript": {
+      "main": [
+        [
+          {
+            "node": "Raw transcript to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response vars": {
+      "main": [
+        [
+          {
+            "node": "Notificate workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not found file vars": {
+      "main": [
+        [
+          {
+            "node": "Notificate workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Raw transcript to JSON": {
+      "main": [
+        [
+          {
+            "node": "Success Response vars",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "JSON to VectodDB Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificate workflow": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "97e63a3d-7699-4693-b037-b22b1a03b983",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "be6c6d7ff7c15c8469c795932a0a6b3b9d114f5a447f9d3fb2f8180e44bcf430"
+  },
+  "id": "Or7Nz4Im8WABMJDa",
+  "tags": []
+}

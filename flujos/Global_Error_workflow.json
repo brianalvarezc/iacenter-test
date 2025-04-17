@@ -1,0 +1,117 @@
+{
+  "name": "Global Error workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        120
+      ],
+      "id": "bc01364f-e60d-4898-a869-31fe4228524a",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.notification_email }}",
+        "subject": "=Error workflow at {{ $('Error Trigger').item.json.workflow.name }}",
+        "emailType": "text",
+        "message": "=Execution flow at {{ $now.toISO().replaceAll('T', ' ') }}.\n\nMessage: {{ $('Error Trigger').item.json.execution.error.message }}\n\nWorkflow: \nNode: {{ $('Error Trigger').item.json.execution.lastNodeExecuted }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        -20
+      ],
+      "id": "37a315da-5650-4bf3-852f-08d550e48f29",
+      "name": "Gmail",
+      "webhookId": "41028548-7ed5-44ce-a612-5e66c92bc7c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dCrJxQIzOOUATm6s",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"notification_email\": \"dev_test_1@yopmail.com\"\n}\n",
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        -20
+      ],
+      "id": "3f08cbe1-e4da-4093-b4a7-f9d4711c9799",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -920,
+        -100
+      ],
+      "id": "bb227422-93ec-4284-bc03-4ee6c242653f",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "573732bc-16b6-42b6-9e82-fbe00fd6f6aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "be6c6d7ff7c15c8469c795932a0a6b3b9d114f5a447f9d3fb2f8180e44bcf430"
+  },
+  "id": "QF6zy3KjPWrq6t36",
+  "tags": []
+}
