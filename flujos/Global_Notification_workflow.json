@@ -1,0 +1,109 @@
+{
+  "name": "Global Notification workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "sendTo": "={{ $json.notification_email }}",
+        "subject": "=Workflow at {{ $now }}",
+        "emailType": "text",
+        "message": "=Execution flow at {{ $now.toISO().replaceAll('T', ' ') }}.\n\nWorkflow: {{ $('Parent workflow trigger').item.json['workflow'] }}\nMessage: {{ $('Parent workflow trigger').item.json['message'] }}\nData: \n{{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        -20
+      ],
+      "id": "392e43c1-e3c7-4edd-942f-4eba44aecc19",
+      "name": "Gmail",
+      "webhookId": "62230570-8ca1-4a8d-b58e-5d3ed7b76fe1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dCrJxQIzOOUATm6s",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "af487684-0614-487e-9e9a-5e3332172d7e",
+              "name": "notification_email",
+              "value": "dev_test_1@yopmail.com",
+              "type": "string"
+            },
+            {
+              "id": "a1ce8751-7c97-4537-b482-2df6508fb71a",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -640,
+        -20
+      ],
+      "id": "f087284f-dc65-4840-a34c-67ac886306e5",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -820,
+        -20
+      ],
+      "id": "4a3237b7-b3f7-4f5c-a672-e650e8aa6709",
+      "name": "Parent workflow trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parent workflow trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ee20fbdc-829d-4cf5-9ecf-e1b0d9a012ad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "be6c6d7ff7c15c8469c795932a0a6b3b9d114f5a447f9d3fb2f8180e44bcf430"
+  },
+  "id": "CbMGjs8kAZ2g5saF",
+  "tags": []
+}

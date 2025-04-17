@@ -1,0 +1,140 @@
+{
+  "name": "Audio transcript and diarization - IA Center Sofka",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "transcript-audio",
+        "authentication": "basicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "be3e7b16-a5b3-43b0-b7af-12c08337349f",
+      "name": "Webhook",
+      "webhookId": "7b18df2b-f95a-43ae-8ea8-fb7fbefd1a13",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "dijqLpNwYaFA2oCQ",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.1,
+      "position": [
+        1020,
+        -180
+      ],
+      "id": "474cfc75-ce0d-462c-b53a-f5ae53879e66",
+      "name": "Qdrant Vector Store"
+    },
+    {
+      "parameters": {
+        "modelName": "models/embedding-001"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        980,
+        160
+      ],
+      "id": "002e6b05-f975-4c0f-90b9-8cee71a800d7",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xgSR5tS6yMAOaEM8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        40
+      ],
+      "id": "4d1b2be0-afdd-44f1-a7a5-37116d1e4c0c",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        260
+      ],
+      "id": "7a288deb-cea8-410f-84ac-6adced2435de",
+      "name": "Recursive Character Text Splitter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "08531f72-37b9-4f58-a726-2c17e9d7f45f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "18ec997947a295e96b9e32ed5df78437afe89d3f9839b8bfd57b5e243fa018ba"
+  },
+  "id": "FvcMixkemkoyUBp4",
+  "tags": []
+}
